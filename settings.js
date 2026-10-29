@@ -2,7 +2,7 @@
 window.COIN_DASH = {
   width: 800,
   height: 500,
-  roundSeconds: 45,
+  roundSeconds: 20,
   playerSpeed: 240,
   droneSpeed: 105,
   droneCount: 3,
@@ -18,7 +18,7 @@ window.COIN_DASH = {
     dronesPerLevel: 1,        // extra drones added per level
     maxDrones: 8,             // drone count cap
     speedMultiplier: 1.1,     // drone speed multiplied by this each level
-    secondsLessPerLevel: 5,   // round time removed per level
+    secondsLessPerLevel: 0,   // round time removed per level
     minRoundSeconds: 20,      // round time floor
     hudText: ' Level {n}',
     readyText: 'Level {n} \u2014 get ready',
