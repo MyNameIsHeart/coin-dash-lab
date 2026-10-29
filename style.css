@@ -5,3 +5,16 @@ header > p:first-child { color: #71e8ce; font-size: 12px; letter-spacing: .15em;
 h1 { margin: 0; font-size: 40px; }
 #game { border: 1px solid #34445e; border-radius: 12px; overflow: hidden; }
 canvas { display: block; }
+
+/* ---------- High score: name prompt overlay (feature/high-score) ---------- */
+#name-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(10, 17, 32, 0.8); z-index: 10; }
+#name-overlay[hidden] { display: none; }
+#name-form { display: flex; flex-direction: column; gap: 10px; width: min(360px, 90vw); padding: 24px;
+  background: #0a1120; border: 1px solid #34445e; border-radius: 12px; }
+#name-title { margin: 0; font-size: 22px; font-weight: bold; }
+#name-form label { font-size: 14px; color: #a9b7cc; }
+#name-input { font: 17px monospace; padding: 8px 10px; color: #e5edf7; background: #101c31;
+  border: 1px solid #34445e; border-radius: 8px; }
+#name-form button { font: inherit; padding: 8px 12px; color: #0a1120; background: #71e8ce;
+  border: 0; border-radius: 8px; cursor: pointer; }

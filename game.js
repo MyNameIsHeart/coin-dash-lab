@@ -1,6 +1,7 @@
 /* global Phaser, COIN_DASH */
 // Level progress lives outside the scene so it survives scene.restart() between levels.
 const levelState = { level: 1, score: 0 };
+const COIN_DASH_BEST_KEY = 'coinDashHighScore';
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
 
@@ -9,6 +10,7 @@ class CoinDash extends Phaser.Scene {
     this.score = 0;
     this.finished = false;
     this.paused = false;
+    this.best = this.loadBest();
     const lv = this.beginLevel();
     this.deadline = this.time.now + lv.roundSeconds * 1000;
     this.physics.world.setBounds(0, 44, c.width, c.height - 44);
@@ -85,7 +87,7 @@ class CoinDash extends Phaser.Scene {
     this.player.body.setVelocity(direction.x, direction.y);
     this.physics.world.wrap(this.player, COIN_DASH.wrap.padding);
     const seconds = Math.max(0, Math.ceil((this.deadline - this.time.now) / 1000));
-    this.hud.setText(`Coins: ${this.score}                       Time: ${seconds}s${this.levelHud()}`);
+    this.hud.setText(`Coins: ${this.score}      Best: ${this.bestLabel()}      Time: ${seconds}s${this.levelHud()}`);
     if (seconds === 0) this.levelComplete();
   }
 
@@ -94,11 +96,72 @@ class CoinDash extends Phaser.Scene {
     this.finished = true;
     this.physics.pause();
     const c = COIN_DASH;
-    this.add.rectangle(c.width / 2, c.height / 2, 460, c.levels.panelHeight, 0x0a1120, 0.95);
-    this.add.text(c.width / 2, c.height / 2,
-      `${reason}\n${this.levelReached()}\n${this.score} coins collected\nPress R to try again`,
+    // One extra line (Best) on top of the levels panel.
+    this.add.rectangle(c.width / 2, c.height / 2, 460, c.levels.panelHeight + 40, 0x0a1120, 0.95);
+    const endText = this.add.text(c.width / 2, c.height / 2,
+      `${reason}\n${this.levelReached()}\n${this.score} coins collected\nBest: ${this.bestLabel()}\nPress R to try again`,
       { font: '24px monospace', color: '#ffffff', align: 'center', lineSpacing: 12 }
     ).setOrigin(0.5);
+    if (this.score > 0 && this.score > this.best.score) {
+      const oldLabel = this.bestLabel();
+      this.askName((name) => {
+        this.best = { score: this.score, name };
+        this.saveBest(this.best);
+        endText.setText(`${reason}\n${this.levelReached()}\n${this.score} coins collected\nNew best: ${this.bestLabel()}\nPress R to try again`);
+        this.hud.setText(this.hud.text.replace(oldLabel, this.bestLabel()));
+      });
+    }
+  }
+
+  // ---- High score helpers: one localStorage key, every access wrapped in try/catch. ----
+  loadBest() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(COIN_DASH_BEST_KEY));
+      if (saved && Number.isFinite(saved.score) && saved.score > 0) {
+        return { score: saved.score, name: String(saved.name || 'Anonymous') };
+      }
+    } catch (e) { /* storage blocked or corrupt entry: play without a saved best */ }
+    return { score: 0, name: '' };
+  }
+
+  saveBest(best) {
+    try {
+      localStorage.setItem(COIN_DASH_BEST_KEY, JSON.stringify(best));
+    } catch (e) { /* storage blocked: the best still lives for this page session */ }
+  }
+
+  bestLabel() {
+    return this.best.score > 0 ? `${this.best.score} (${this.best.name})` : 'none yet';
+  }
+
+  // Shows the HTML name prompt from index.html; calls onDone(name) once the player submits.
+  askName(onDone) {
+    const overlay = document.getElementById('name-overlay');
+    const form = document.getElementById('name-form');
+    const input = document.getElementById('name-input');
+    if (!overlay || !form || !input) { onDone('Anonymous'); return; }
+    const keyboard = this.input.keyboard;
+    keyboard.enabled = false; // typing a name must not move the player or restart the round
+    const swallow = (e) => e.stopPropagation(); // keep key events away from Phaser's window listener
+    input.addEventListener('keydown', swallow);
+    input.addEventListener('keyup', swallow);
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      form.onsubmit = null;
+      input.removeEventListener('keydown', swallow);
+      input.removeEventListener('keyup', swallow);
+      const name = input.value.trim() || 'Anonymous';
+      overlay.hidden = true;
+      input.blur();
+      keyboard.enabled = true;
+      keyboard.resetKeys();
+      const canvas = this.game.canvas; // hand focus back so R restarts right away
+      if (canvas) { canvas.setAttribute('tabindex', '-1'); canvas.focus(); }
+      onDone(name);
+    };
+    input.value = '';
+    overlay.hidden = false;
+    input.focus();
   }
 
   // --- Levels by rounds ---------------------------------------------------
