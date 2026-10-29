@@ -1,10 +1,22 @@
 * { box-sizing: border-box; }
-body { margin: 0; background: #0a1120; color: #e5edf7; font: 17px/1.5 system-ui, sans-serif; }
+body {
+  margin: 0; min-height: 100vh; color: #e5edf7; font: 17px/1.5 system-ui, sans-serif;
+  background: #0a1120 radial-gradient(ellipse at 50% -10%, #182a4a 0%, #0f1a2e 45%, #0a1120 100%) fixed;
+}
 main { max-width: 850px; margin: 30px auto; padding: 0 20px; }
-header > p:first-child { color: #71e8ce; font-size: 12px; letter-spacing: .15em; }
-h1 { margin: 0; font-size: 40px; }
-#game { border: 1px solid #34445e; border-radius: 12px; overflow: hidden; }
+header > p:first-child { color: #71e8ce; font-size: 12px; letter-spacing: .15em; margin-bottom: 4px; }
+h1 { margin: 0; font-size: 40px; letter-spacing: -.01em; }
+header > p:last-child { color: #aebbd0; margin-top: 8px; }
+#game {
+  border: 1px solid #34445e; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 0 0 4px #0d172a, 0 18px 50px rgba(0, 0, 0, .55), 0 0 28px rgba(113, 232, 206, .12);
+}
 canvas { display: block; }
+main > p:last-child { color: #aebbd0; font-size: 15px; text-align: center; }
+main > p:last-child strong {
+  display: inline-block; padding: 1px 8px; border-radius: 6px; font-weight: 600; color: #e5edf7;
+  background: #16233a; border: 1px solid #34445e; box-shadow: 0 2px 0 #0a1120;
+}
 
 /* ---------- High score: name prompt overlay (feature/high-score) ---------- */
 #name-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
