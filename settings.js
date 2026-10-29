@@ -24,5 +24,7 @@ window.COIN_DASH = {
     readyText: 'Level {n} \u2014 get ready',
     reachedText: 'Reached level {n}',
     panelHeight: 190
-  }
+  },
+  // Pac-Man style screen wrap for the player: leaving one edge re-enters from the opposite one.
+  wrap: { padding: 12 }
 };
