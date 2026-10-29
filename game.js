@@ -26,10 +26,12 @@ class CoinDash extends Phaser.Scene {
       const angle = (35 + i * 105) * Math.PI / 180;
       drone.body.setVelocity(Math.cos(angle) * c.droneSpeed, Math.sin(angle) * c.droneSpeed);
     }
+    this.initLevels();
     this.physics.add.overlap(this.player, this.coin, () => {
       if (this.finished) return;
       this.score++;
       this.placeCoin();
+      this.checkLevelUp();
     });
     this.physics.add.overlap(this.player, this.drones, () => this.finish('A drone caught you!'));
     this.cursors = this.input.keyboard.createCursorKeys();
@@ -58,8 +60,73 @@ class CoinDash extends Phaser.Scene {
     const direction = new Phaser.Math.Vector2(dx, dy).normalize().scale(COIN_DASH.playerSpeed);
     this.player.body.setVelocity(direction.x, direction.y);
     const seconds = Math.max(0, Math.ceil((this.deadline - this.time.now) / 1000));
-    this.hud.setText(`Coins: ${this.score}                       Time: ${seconds}s`);
+    this.hud.setText(`Coins: ${this.score}                       Time: ${seconds}s${this.levelHudText()}`);
     if (seconds === 0) this.finish('Time is up!');
+  }
+
+  // --- Levels by coins -------------------------------------------------------
+  initLevels() {
+    const l = COIN_DASH.levels;
+    this.level = l.startLevel;
+    this.droneSpeedScale = 1;
+  }
+
+  levelHudText() {
+    return `${COIN_DASH.levels.hudLabel}${this.level}`;
+  }
+
+  levelPanelLine() {
+    return COIN_DASH.levels.panelLine.replace('{level}', this.level);
+  }
+
+  checkLevelUp() {
+    const l = COIN_DASH.levels;
+    const target = l.startLevel + Math.floor(this.score / l.coinsPerLevel);
+    while (this.level < target && !this.finished) this.levelUp();
+  }
+
+  levelUp() {
+    const l = COIN_DASH.levels;
+    this.level++;
+    // Every drone gets faster, including the ones spawned on this level-up.
+    this.droneSpeedScale *= l.droneSpeedMultiplier;
+    this.drones.getChildren().forEach((drone) => drone.body.velocity.scale(l.droneSpeedMultiplier));
+    for (let i = 0; i < l.dronesPerLevelUp; i++) this.spawnLevelDrone();
+    // Take time off the clock, but never drop below the minimum remaining time.
+    const remaining = this.deadline - this.time.now;
+    let next = remaining - l.timePenaltySeconds * 1000;
+    if (next < l.minRemainingSeconds * 1000) next = Math.min(remaining, l.minRemainingSeconds * 1000);
+    this.deadline = this.time.now + next;
+    this.flashLevel();
+  }
+
+  spawnLevelDrone() {
+    const c = COIN_DASH;
+    const l = c.levels;
+    if (this.drones.getLength() >= l.maxDrones) return;
+    // Random position inside the playfield, away from the player.
+    let x, y, attempts = 0;
+    do {
+      x = Phaser.Math.Between(30, c.width - 30);
+      y = Phaser.Math.Between(75, c.height - 30);
+      attempts++;
+    } while (Phaser.Math.Distance.Between(x, y, this.player.x, this.player.y) < l.spawnMinDistance
+      && attempts < l.spawnAttempts);
+    const drone = this.add.rectangle(x, y, 26, 26, c.colors.drone);
+    this.drones.add(drone);
+    drone.body.setCollideWorldBounds(true).setBounce(1, 1);
+    const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+    const speed = c.droneSpeed * this.droneSpeedScale;
+    drone.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+  }
+
+  flashLevel() {
+    const c = COIN_DASH;
+    const l = c.levels;
+    const label = this.add.text(c.width / 2, c.height / 2, l.flashText.replace('{level}', this.level), l.flashStyle)
+      .setOrigin(0.5).setDepth(10);
+    this.tweens.add({ targets: label, alpha: 0, duration: l.flashMs, ease: 'Quad.easeIn',
+      onComplete: () => label.destroy() });
   }
 
   finish(reason) {
@@ -69,7 +136,7 @@ class CoinDash extends Phaser.Scene {
     const c = COIN_DASH;
     this.add.rectangle(c.width / 2, c.height / 2, 460, 150, 0x0a1120, 0.95);
     this.add.text(c.width / 2, c.height / 2,
-      `${reason}\n${this.score} coins collected\nPress R to try again`,
+      `${reason}\n${this.score} coins collected\n${this.levelPanelLine()}\nPress R to try again`,
       { font: '24px monospace', color: '#ffffff', align: 'center', lineSpacing: 12 }
     ).setOrigin(0.5);
   }
